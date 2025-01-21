@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "test": "deno test --allow-read"
+  },
+  "imports": {
+    "@crumble-jon/bbs-signature": "jsr:@crumble-jon/bbs-signature@^0.2.1",
+    "@crumble-jon/ld-crypto-syntax": "jsr:@crumble-jon/ld-crypto-syntax@^0.3.5",
+    "@scure/base": "jsr:@scure/base@^1.2.4",
+    "@std/assert": "jsr:@std/assert@1"
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "lineWidth": 120,
+    "semiColons": false
+  }
+}
