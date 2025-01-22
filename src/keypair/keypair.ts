@@ -1,7 +1,14 @@
-import { DIDURL, Keypair, URI, type VerificationResult } from "@crumble-jon/ld-crypto-syntax"
+import {
+  DIDURL,
+  Keypair,
+  KeypairDocument,
+  KeypairExportOptions,
+  KeypairImportOptions,
+  URI,
+  type VerificationResult,
+} from "@crumble-jon/ld-crypto-syntax"
 
-import * as KEYPAIR_CONSTANT from "./constants.ts"
-import { Algorithm, generateKeypair, materialToMultibase } from "./core.ts"
+import { Algorithm, generateKeypair, keypairToJwk, materialToMultibase } from "./core.ts"
 
 export class BBSKeypair extends Keypair {
   /**
@@ -15,11 +22,6 @@ export class BBSKeypair extends Keypair {
   privateKey?: Uint8Array
 
   /**
-   * The BBS algorithm.
-   */
-  algorithm: Algorithm
-
-  /**
    * Generate a BLS12-381 keypair for BBS signatures.
    *
    * @param {Algorithm} algorithm The algorithm to use for keypair generation.
@@ -28,8 +30,7 @@ export class BBSKeypair extends Keypair {
    * @param {Date} [_revoked] The date and time when the keypair has been revoked.
    */
   constructor(algorithm: Algorithm, _id?: URI, _controller?: DIDURL, _revoked?: Date) {
-    super(KEYPAIR_CONSTANT.TYPE_BASIC, _id, _controller, _revoked)
-    this.algorithm = algorithm
+    super(algorithm, _id, _controller, _revoked)
   }
 
   /**
@@ -39,7 +40,7 @@ export class BBSKeypair extends Keypair {
    * @param {Uint8Array} [seed] The seed to use for keypair generation.
    */
   override async initialize(seed?: Uint8Array) {
-    const { secretKey, publicKey } = generateKeypair(this.algorithm, seed)
+    const { secretKey, publicKey } = generateKeypair(this.type as Algorithm, seed)
     this.privateKey = secretKey
     this.publicKey = publicKey
 
@@ -79,20 +80,55 @@ export class BBSKeypair extends Keypair {
     })
   }
 
-  // override export(_options: DIDURL): Promise<DIDURL> {
+  /**
+   * Export the serialized representation of the keypair, along with other metadata which can be used to form a proof.
+   *
+   * @param {KeypairExportOptions} options The options to export the keypair.
+   *
+   * @returns {Promise<KeypairDocument>} Resolve to a serialized keypair to be exported.
+   */
+  override async export(options: KeypairExportOptions): Promise<KeypairDocument> {
+    if (!options.flag) {
+      options.flag = "public"
+    }
 
-  // }
+    // TODO: encapsulated error
+    if ((options.flag === "private" && !this.privateKey) || (options.flag === "public" && !this.publicKey)) {
+      throw new Error("Key material not set")
+    }
 
-  // static override import(_document: DIDURL, _options: DIDURL): Promise<Keypair> {
+    // TODO: encapsulated error
+    if (!this.id || !this.controller) {
+      throw new Error("Identifier not set")
+    }
 
-  // }
+    if (options.type === "jwk") {
+      return await keypairToJwk(this, options.flag)
+    } else if (options.type === "multibase") {
+      throw new Error("Not implemented")
+    } else {
+      throw new Error("Invalid export type")
+    }
+  }
+
+   /**
+   * Import a keypair from a serialized representation of a keypair.
+   *
+   * @param {KeypairDocument} document An externally fetched key document.
+   * @param {KeypairImportOptions} options Options for keypair import.
+   *
+   * @returns {Promise<BBSKeypair>} Resolve to a keypair instance.
+   */
+  static override import(document: KeypairDocument, options: KeypairImportOptions): Promise<BBSKeypair> {
+    
+  }
 
   /**
    * Calculate the public key multibase encoded string.
    *
    * @returns {string} The multibase encoded public key string.
    */
-  private getPublicKeyMultibase(): string {
+  getPublicKeyMultibase(): string {
     // TODO: throw encapsulated error
     if (!this.publicKey) {
       throw new Error("Public key not set")
@@ -105,7 +141,7 @@ export class BBSKeypair extends Keypair {
    *
    * @returns {string} The multibase encoded private key string.
    */
-  private getPrivateKeyMultibase(): string {
+  getPrivateKeyMultibase(): string {
     // TODO: throw encapsulated error
     if (!this.privateKey) {
       throw new Error("Private key not set")
