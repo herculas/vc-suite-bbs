@@ -1,8 +1,5 @@
-import { concatenate, JWK, JWKEC, KeypairDocument, toW3CTimestampString } from "@crumble-jon/ld-crypto-syntax"
-import { generateKeypair as keygen } from "@crumble-jon/bbs-signature"
-import { base58, base64url } from "@scure/base"
+import { generateKeypair as keygen } from "@herculas/bbs-signature"
 
-import * as CONTEXT_URL from "../context/constants.ts"
 import * as KEYPAIR_CONSTANT from "./constants.ts"
 import { bytesToHex, hexToBytes } from "../utils/format.ts"
 import { BBSKeypair } from "./keypair.ts"

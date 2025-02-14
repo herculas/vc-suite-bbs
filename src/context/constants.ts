@@ -1,1 +1,0 @@
-export const JWS_2020 = "https://w3id.org/security/jws/v1"
