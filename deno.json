@@ -1,10 +1,14 @@
 {
+  "name": "@herculas/vc-suite-bbs",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": "./src/mod.ts",
   "tasks": {
     "test": "deno test --allow-read"
   },
   "imports": {
     "@herculas/bbs-signature": "jsr:@herculas/bbs-signature@^0.5.1",
-    "@herculas/vc-data-integrity": "jsr:@herculas/vc-data-integrity@^0.7.7",
+    "@herculas/vc-data-integrity": "jsr:@herculas/vc-data-integrity@^0.8.5",
     "@std/assert": "jsr:@std/assert@1"
   },
   "fmt": {
