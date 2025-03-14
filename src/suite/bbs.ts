@@ -1,8 +1,7 @@
-import { Cryptosuite, JsonLdDocument, Proof, Result } from "@herculas/vc-data-integrity"
+import { Cryptosuite, type JsonLdDocument, type Proof, type Verification } from "@herculas/vc-data-integrity"
 
 import * as core from "./core.ts"
 import * as SUITE_CONSTANT from "../constant/suite.ts"
-import { Verification } from "https://jsr.io/@herculas/vc-data-integrity/0.8.5/src/types/api/result.ts"
 
 /**
  * A cryptographic suite for the purpose of creating, verifying, and deriving proofs using the BBS Signature Scheme in
@@ -20,7 +19,7 @@ import { Verification } from "https://jsr.io/@herculas/vc-data-integrity/0.8.5/s
  * containing the exact same information. Finally, a verifier uses the BBS `ProofVerify` function to verify the derived
  * credential received from the holder.
  */
-export class BBS2023 extends Cryptosuite {
+export class Bbs2023 extends Cryptosuite {
   /**
    * The name of the cryptographic suite.
    *
@@ -48,7 +47,7 @@ export class BBS2023 extends Cryptosuite {
    * @param securedDocument
    * @param options
    */
-  static override verifyProof(securedDocument: JsonLdDocument, options?: object): Promise<Result.Verification> {
+  static override verifyProof(securedDocument: JsonLdDocument, options?: object): Promise<Verification> {
     throw new Error("Method not implemented.")
   }
 }

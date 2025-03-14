@@ -1,9 +1,10 @@
 import {
   document,
+  type Export,
   ImplementationError,
   ImplementationErrorCode,
+  type Import,
   Keypair,
-  type KeypairOptions,
   loader,
   type URI,
   VC_BASE_URL,
@@ -18,7 +19,7 @@ import * as SUITE_CONSTANT from "../constant/suite.ts"
 /**
  * The BBS keypair class. The secret key is a scalar, and the public key is a G2 point on the BLS12-381 curve.
  */
-export class BBSKeypair extends Keypair {
+export class BbsKeypair extends Keypair {
   /**
    * The type of the cryptographic suite used by the keypair instances.
    */
@@ -93,11 +94,11 @@ export class BBSKeypair extends Keypair {
   /**
    * Export the serialized representation of the keypair, along with other metadata which can be used to form a proof.
    *
-   * @param {KeypairOptions.Export} [options] The options to export the keypair.
+   * @param {Export} [options] The options to export the keypair.
    *
    * @returns {Promise<VerificationMethod>} Resolve to a verification method containing the serialized keypair.
    */
-  override export(options?: KeypairOptions.Export): Promise<VerificationMethod> {
+  override export(options?: Export): Promise<VerificationMethod> {
     // set default options
     options ||= {}
     options.flag ||= "public"
@@ -145,8 +146,8 @@ export class BBSKeypair extends Keypair {
    */
   static override async import(
     inputDocument: VerificationMethod,
-    options?: KeypairOptions.Import,
-  ): Promise<BBSKeypair> {
+    options?: Import,
+  ): Promise<BbsKeypair> {
     // set default options
     options ||= {}
 

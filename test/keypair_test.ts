@@ -2,10 +2,10 @@ import { Cipher, key } from "@herculas/bbs-signature"
 import { assert, assertEquals } from "@std/assert"
 
 import { generateKeypair } from "../src/key/core.ts"
-import { BBSKeypair } from "../src/key/keypair.ts"
+import { BbsKeypair } from "../src/key/keypair.ts"
 
 Deno.test("test static type", async () => {
-  const keypair = new BBSKeypair()
+  const keypair = new BbsKeypair()
   await keypair.initialize()
 
   console.log(keypair.publicKey)

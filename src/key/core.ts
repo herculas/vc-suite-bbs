@@ -1,19 +1,17 @@
 import {
-  base58btc,
-  base64url,
+  type Flag,
   format,
   ImplementationError,
   ImplementationErrorCode,
   type JWK,
   type JWKEC,
-  type KeypairOptions,
+  multi,
   type VerificationMethodJwk,
   type VerificationMethodMultibase,
 } from "@herculas/vc-data-integrity"
 import { key } from "@herculas/bbs-signature"
 
-import { BBSKeypair } from "./keypair.ts"
-import { bytesToHex, hexToBytes } from "../utils/format.ts"
+import { BbsKeypair } from "./keypair.ts"
 
 import * as PREFIX_CONSTANT from "../constant/prefix.ts"
 import * as SUITE_CONSTANT from "../constant/suite.ts"
@@ -33,11 +31,11 @@ export function generateKeypair(seed?: Uint8Array): {
     seed = new Uint8Array(SUITE_CONSTANT.DEFAULT_KEY_MATERIAL_LENGTH)
     crypto.getRandomValues(seed)
   }
-  const material = bytesToHex(seed)
+  const material = format.bytesToHex(seed)
   const { secretKey, publicKey } = key.createPair(material)
   return {
-    secretKey: hexToBytes(secretKey),
-    publicKey: hexToBytes(publicKey),
+    secretKey: format.hexToBytes(secretKey),
+    publicKey: format.hexToBytes(publicKey),
   }
 }
 
@@ -45,11 +43,11 @@ export function generateKeypair(seed?: Uint8Array): {
  * Encode a key material into a multibase-encoded string.
  *
  * @param {Uint8Array} material The key material in Uint8Array format.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {string} The multibase-encoded key string.
  */
-export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.Flag): string {
+export function materialToMultibase(material: Uint8Array, flag: Flag): string {
   const multiPrefix = flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE
   const expectedLength = flag === "private" ? SUITE_CONSTANT.PRIVATE_KEY_LENGTH : SUITE_CONSTANT.PUBLIC_KEY_LENGTH
 
@@ -62,7 +60,7 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
   }
 
   const multibase = format.concatenate(multiPrefix, material)
-  return base58btc.encode(multibase)
+  return multi.base58btc.encode(multibase)
 }
 
 /**
@@ -70,12 +68,12 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
  * the prefix from the specification.
  *
  * @param {string} multibase A multibase-encoded private or public key string.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Uint8Array} The decoded key material in Uint8Array format.
  */
-export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag): Uint8Array {
-  const key = base58btc.decode(multibase)
+export function multibaseToMaterial(multibase: string, flag: Flag): Uint8Array {
+  const key = multi.base58btc.decode(multibase)
   const expectedPrefix = flag === "private"
     ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE
     : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE
@@ -101,7 +99,7 @@ export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag
 async function getJwkThumbprint(jwk: JWK): Promise<string> {
   const data = new TextEncoder().encode(JSON.stringify(jwk))
   const hash = await crypto.subtle.digest("SHA-256", data)
-  return base64url.encode(new Uint8Array(hash))
+  return multi.base64url.encode(new Uint8Array(hash))
 }
 
 /**
@@ -109,11 +107,11 @@ async function getJwkThumbprint(jwk: JWK): Promise<string> {
  * private, the `d` field is included in the resulted object.
  *
  * @param {Uint8Array} material A BBS private key or public key material.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {JWKEC} An object representing a JSON Web Key.
  */
-export function keyToJwk(material: Uint8Array, flag: KeypairOptions.Flag): JWKEC {
+export function keyToJwk(material: Uint8Array, flag: Flag): JWKEC {
   const expectedLength = flag === "private" ? SUITE_CONSTANT.PRIVATE_KEY_LENGTH : SUITE_CONSTANT.PUBLIC_KEY_LENGTH
   const usage = flag === "private" ? ["sign"] : ["verify"]
 
@@ -125,7 +123,7 @@ export function keyToJwk(material: Uint8Array, flag: KeypairOptions.Flag): JWKEC
     )
   }
 
-  const serialized = base64url.encode(material)
+  const serialized = multi.base64url.encode(material)
 
   const jwk: JWKEC = {
     kty: SUITE_CONSTANT.JWK_TYPE,
@@ -147,11 +145,11 @@ export function keyToJwk(material: Uint8Array, flag: KeypairOptions.Flag): JWKEC
  * is private, the `d` field MUST be provided in the `jwk` input.
  *
  * @param {JWKEC} jwk An object representing a JSON Web Key.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Uint8Array} The key material in Uint8Array format.
  */
-export function jwkToKey(jwk: JWKEC, flag: KeypairOptions.Flag): Uint8Array {
+export function jwkToKey(jwk: JWKEC, flag: Flag): Uint8Array {
   if ((flag === "private" && !jwk.d) || (flag === "public" && jwk.x === "")) {
     throw new ImplementationError(
       ImplementationErrorCode.INVALID_KEYPAIR_CONTENT,
@@ -161,18 +159,18 @@ export function jwkToKey(jwk: JWKEC, flag: KeypairOptions.Flag): Uint8Array {
   }
 
   const serialized = flag === "public" ? jwk.x : jwk.d!
-  return base64url.decode(serialized)
+  return multi.base64url.decode(serialized)
 }
 
 /**
  * Export a BBS keypair instance into a verification method containing a keypair in JWK format.
  *
- * @param {BBSKeypair} keypair A BBS keypair instance.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {BbsKeypair} keypair A BBS keypair instance.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<VerificationMethodJwk>} A verification method containing a keypair in JWK format.
  */
-export async function keypairToJwk(keypair: BBSKeypair, flag: KeypairOptions.Flag): Promise<VerificationMethodJwk> {
+export async function keypairToJwk(keypair: BbsKeypair, flag: Flag): Promise<VerificationMethodJwk> {
   // check the controller and identifier
   if (!keypair.controller || !keypair.id) {
     throw new ImplementationError(
@@ -232,10 +230,10 @@ export async function keypairToJwk(keypair: BBSKeypair, flag: KeypairOptions.Fla
  * @param {Date} [expires] The expiration date of the keypair.
  * @param {Date} [revoked] The revoked date of the keypair.
  *
- * @returns {Promise<BBSKeypair>} Resolve to a BBS keypair instance.
+ * @returns {Promise<BbsKeypair>} Resolve to a BBS keypair instance.
  */
-export function jwkToKeypair(verificationMethod: VerificationMethodJwk, expires?: Date, revoked?: Date): BBSKeypair {
-  const keypair = new BBSKeypair(
+export function jwkToKeypair(verificationMethod: VerificationMethodJwk, expires?: Date, revoked?: Date): BbsKeypair {
+  const keypair = new BbsKeypair(
     // verificationMethod.type,
     verificationMethod.id,
     verificationMethod.controller,
@@ -243,7 +241,7 @@ export function jwkToKeypair(verificationMethod: VerificationMethodJwk, expires?
     revoked,
   )
 
-  const innerImport = (jwk: JWK, flag: KeypairOptions.Flag) => {
+  const innerImport = (jwk: JWK, flag: Flag) => {
     let convertedJwk: JWKEC
     try {
       convertedJwk = jwk as JWKEC
@@ -282,12 +280,12 @@ export function jwkToKeypair(verificationMethod: VerificationMethodJwk, expires?
 /**
  * Export a BBS keypair instance into a verification method containing a keypair in multibase format.
  *
- * @param {BBSKeypair} keypair An BBS keypair instance.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {BbsKeypair} keypair An BBS keypair instance.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {VerificationMethodMultibase} A verification method containing a multibase document.
  */
-export function keypairToMultibase(keypair: BBSKeypair, flag: KeypairOptions.Flag): VerificationMethodMultibase {
+export function keypairToMultibase(keypair: BbsKeypair, flag: Flag): VerificationMethodMultibase {
   // check the controller and identifier
   if (!keypair.controller || !keypair.id) {
     throw new ImplementationError(
@@ -346,14 +344,14 @@ export function keypairToMultibase(keypair: BBSKeypair, flag: KeypairOptions.Fla
  * @param {Date} [expires] The expiration date of the keypair.
  * @param {Date} [revoked] The revoked date of the keypair.
  *
- * @returns {BBSKeypair} A BBS keypair instance.
+ * @returns {BbsKeypair} A BBS keypair instance.
  */
 export function multibaseToKeypair(
   verificationMethod: VerificationMethodMultibase,
   expires?: Date,
   revoked?: Date,
-): BBSKeypair {
-  const keypair = new BBSKeypair(verificationMethod.id, verificationMethod.controller, expires, revoked)
+): BbsKeypair {
+  const keypair = new BbsKeypair(verificationMethod.id, verificationMethod.controller, expires, revoked)
 
   // import the private key if it is presented
   if (verificationMethod.secretKeyMultibase) {
