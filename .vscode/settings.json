@@ -13,6 +13,7 @@
     "ostr",
     "scure",
     "SSWU",
-    "Unlinkable"
+    "Unlinkable",
+    "varint"
   ]
 }

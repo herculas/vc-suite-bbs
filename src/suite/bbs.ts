@@ -25,7 +25,7 @@ export class Bbs2023 extends Cryptosuite {
    *
    * In this suite, this value MUST be `bbs-2023`.
    */
-  static override readonly cryptosuite: string = SUITE_CONSTANT.CRYPTOSUITE
+  static override readonly cryptosuite: string = SUITE_CONSTANT.SUITE_BBS
 
   /**
    * @param unsecuredDocument

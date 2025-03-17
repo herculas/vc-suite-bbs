@@ -17,9 +17,9 @@ import * as core from "./core.ts"
 import * as SUITE_CONSTANT from "../constant/suite.ts"
 
 /**
- * The BBS keypair class. The secret key is a scalar, and the public key is a G2 point on the BLS12-381 curve.
+ * The BLS12-381 G2 keypair class. The secret key is a scalar, and the public key is a G2 point on the BLS12-381 curve.
  */
-export class BbsKeypair extends Keypair {
+export class Bls12381G2Keypair extends Keypair {
   /**
    * The type of the cryptographic suite used by the keypair instances.
    */
@@ -77,7 +77,8 @@ export class BbsKeypair extends Keypair {
       )
     }
 
-    return Promise.resolve(core.materialToMultibase(this.publicKey, "public"))
+    const multibase = core.materialToMultibase(this.publicKey, "public")
+    return Promise.resolve(multibase)
   }
 
   /**
@@ -88,7 +89,8 @@ export class BbsKeypair extends Keypair {
    * @returns {Promise<boolean>} Resolve to a boolean indicating whether the fingerprint matches this keypair instance.
    */
   override async verifyFingerprint(fingerprint: string): Promise<boolean> {
-    return Promise.resolve(fingerprint === (await this.generateFingerprint()))
+    const result = fingerprint === (await this.generateFingerprint())
+    return Promise.resolve(result)
   }
 
   /**
@@ -124,9 +126,11 @@ export class BbsKeypair extends Keypair {
 
     // generate the verification method
     if (options.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI) {
-      return Promise.resolve(core.keypairToMultibase(this, options.flag))
+      const multibase = core.keypairToMultibase(this, options.flag)
+      return Promise.resolve(multibase)
     } else if (options.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK) {
-      return Promise.resolve(core.keypairToJwk(this, options.flag))
+      const jwk = core.keypairToJwk(this, options.flag)
+      return Promise.resolve(jwk)
     } else {
       throw new ImplementationError(
         ImplementationErrorCode.KEYPAIR_EXPORT_ERROR,
@@ -137,17 +141,17 @@ export class BbsKeypair extends Keypair {
   }
 
   /**
-   * Import a BBS keypair from a serialized verification method.
+   * Import a BLS12-381 G2 keypair from a serialized verification method.
    *
    * @param {VerificationMethod} inputDocument A verification method fetched from an external source.
    * @param {KeypairOptions.Import} [options] Options for keypair import.
    *
-   * @returns {Promise<BBSKeypair>} Resolve to a BBS keypair instance.
+   * @returns {Promise<Bls12381G2Keypair>} Resolve to a BLS12-381 G2 keypair instance.
    */
   static override async import(
     inputDocument: VerificationMethod,
     options?: Import,
-  ): Promise<BbsKeypair> {
+  ): Promise<Bls12381G2Keypair> {
     // set default options
     options ||= {}
 

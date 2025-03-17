@@ -1,2 +1,2 @@
 // Keypair
-export { BbsKeypair } from "./key/keypair.ts"
+export { Bls12381G2Keypair as BbsKeypair } from "./key/keypair.ts"

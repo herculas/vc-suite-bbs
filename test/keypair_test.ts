@@ -1,47 +1,79 @@
-import { Cipher, key } from "@herculas/bbs-signature"
-import { assert, assertEquals } from "@std/assert"
+import { assert, assertEquals, assertExists } from "@std/assert"
 
-import { generateKeypair } from "../src/key/core.ts"
-import { BbsKeypair } from "../src/key/keypair.ts"
+import { Bls12381G2Keypair } from "../src/key/keypair.ts"
+import { generateKeypair, jwkToMaterial, materialToJwk } from "../src/key/core.ts"
 
-Deno.test("test static type", async () => {
-  const keypair = new BbsKeypair()
+Deno.test("fingerprint generation and verification", async () => {
+  const keypair = new Bls12381G2Keypair()
   await keypair.initialize()
 
-  console.log(keypair.publicKey)
-  console.log(keypair.privateKey)
+  const fingerprint = await keypair.generateFingerprint()
+  const result = await keypair.verifyFingerprint(fingerprint)
+
+  assert(result)
 })
 
-// Deno.test("raw keypair generation", () => {
-//   const { secretKey, publicKey } = generateKeypair("BLS12_381_G1_XOF_SHAKE_256")
-//   const privateMulti = materialToMultibase(secretKey, "private")
-//   const publicMulti = materialToMultibase(publicKey, "public")
+Deno.test("Keypair import and export: raw functions", () => {
+  const { publicKey, secretKey } = generateKeypair()
 
-//   const decodedPrivate = multibaseToMaterial(privateMulti, "private")
-//   const decodedPublic = multibaseToMaterial(publicMulti, "public")
+  const jwkPublic = materialToJwk(publicKey, "public")
+  const jwkPrivate = materialToJwk(secretKey, "private")
 
-//   assertEquals(secretKey, decodedPrivate)
-//   assertEquals(publicKey, decodedPublic)
-// })
+  const recoveredPublic = jwkToMaterial(jwkPublic, "public")
+  const recoveredPrivate = jwkToMaterial(jwkPrivate, "private")
 
-// Deno.test("keypair fingerprint", async () => {
-//   const keypair = new BBSKeypair("BLS12_381_G1_XOF_SHAKE_256")
-//   await keypair.initialize()
+  const jwkPrivate2 = materialToJwk(recoveredPrivate, "private")
+  const jwkPublic2 = materialToJwk(recoveredPublic, "public")
 
-//   const fingerprint = await keypair.generateFingerprint()
-//   const result = await keypair.verifyFingerprint(fingerprint)
+  assertEquals(jwkPublic, jwkPublic2)
+  assertEquals(jwkPrivate, jwkPrivate2)
+})
 
-//   assert(result)
-// })
+Deno.test("keypair export: encapsulated", async () => {
+  const keypair = new Bls12381G2Keypair()
+  keypair.controller = "did:example:1145141919810"
+  await keypair.initialize()
 
-// Deno.test("jwk export", async () => {
-//   const keypair = new BBSKeypair("BLS12_381_G1_XOF_SHAKE_256")
-//   keypair.controller = "did:example:1145141919810"
-//   await keypair.initialize()
+  const jwkPrivate = await keypair.export({ type: "JsonWebKey", flag: "private" })
+  const jwkPublic = await keypair.export({ type: "JsonWebKey", flag: "public" })
 
-//   const jwkPrivate = await keypair.export({ type: "jwk", flag: "private" })
-//   const jwkPublic = await keypair.export({ type: "jwk", flag: "public" })
+  const multibasePrivate = await keypair.export({ type: "Multikey", flag: "private" })
+  const multibasePublic = await keypair.export({ type: "Multikey", flag: "public" })
 
-//   console.log(jwkPrivate)
-//   console.log(jwkPublic)
-// })
+  assertExists(jwkPrivate)
+  assertExists(jwkPublic)
+  assertExists(multibasePrivate)
+  assertExists(multibasePublic)
+})
+
+Deno.test("keypair export and import: JSON Web Key", async () => {
+  const keypair = new Bls12381G2Keypair()
+  keypair.controller = "did:example:1145141919810"
+  await keypair.initialize()
+
+  const jwkPrivate = await keypair.export({ type: "JsonWebKey", flag: "private" })
+  const jwkPublic = await keypair.export({ type: "JsonWebKey", flag: "public" })
+
+  const recoveredPublicOnly = await Bls12381G2Keypair.import(jwkPublic)
+  const recoveredBoth = await Bls12381G2Keypair.import(jwkPrivate)
+
+  assertExists(recoveredPublicOnly.publicKey)
+  assertExists(recoveredBoth.privateKey)
+  assertExists(recoveredBoth.publicKey)
+})
+
+Deno.test("keypair export and import: Multikey", async () => {
+  const keypair = new Bls12381G2Keypair()
+  keypair.controller = "did:example:1145141919810"
+  await keypair.initialize()
+
+  const multiPrivate = await keypair.export({ type: "Multikey", flag: "private" })
+  const multiPublic = await keypair.export({ type: "Multikey", flag: "public" })
+
+  const recoveredPublicOnly = await Bls12381G2Keypair.import(multiPublic)
+  const recoveredBoth = await Bls12381G2Keypair.import(multiPrivate)
+
+  assertExists(recoveredPublicOnly.publicKey)
+  assertExists(recoveredBoth.privateKey)
+  assertExists(recoveredBoth.publicKey)
+})
