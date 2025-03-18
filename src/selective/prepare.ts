@@ -43,7 +43,7 @@ export async function createDisclosureData(
     & {
       feature?: Feature
       cipher?: Cipher
-      presentationHeader?: Uint8Array
+      presentationHeader?: string
       urnScheme?: URNScheme
       randomString?: string
     }
@@ -192,7 +192,7 @@ export async function createDisclosureData(
       format.bytesToHex(publicKey),
       format.bytesToHex(bbsSignature),
       format.bytesToHex(bbsHeader),
-      options?.presentationHeader ? format.bytesToHex(options.presentationHeader) : undefined,
+      options?.presentationHeader,
       bbsMessages,
       selectiveIndexes,
       cipher,
@@ -230,7 +230,7 @@ export async function createDisclosureData(
     labelMap: verifierLabelMap,
     mandatoryIndexes,
     selectiveIndexes,
-    presentationHeader: options?.presentationHeader ?? new Uint8Array(),
+    presentationHeader: options?.presentationHeader ? format.hexToBytes(options.presentationHeader) : undefined,
     revealDocument,
   }
 }

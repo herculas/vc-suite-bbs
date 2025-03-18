@@ -42,8 +42,8 @@ export type DisclosureData = {
   labelMap: LabelMap
   mandatoryIndexes: Array<number>
   selectiveIndexes: Array<number>
-  presentationHeader: Uint8Array
   revealDocument: JsonValue
+  presentationHeader?: Uint8Array
   pseudonym?: Uint8Array
 }
 

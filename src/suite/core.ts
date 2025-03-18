@@ -21,9 +21,10 @@ import {
 import { Feature } from "../constant/feature.ts"
 
 import { Bls12381G2Keypair } from "../key/keypair.ts"
-import { serializeBaseProofValue } from "../selective/serialize.ts"
+import { serializeBaseProofValue, serializeDerivedProofValue } from "../selective/serialize.ts"
 
 import * as SUITE_CONSTANT from "../constant/suite.ts"
+import { createDisclosureData } from "../selective/prepare.ts"
 
 /**
  * Transform an unsecured input document into a transformed document that is ready to be provided as input to the
@@ -379,6 +380,8 @@ export async function derive(
     presentationHeader?: string
     urnScheme?: URNScheme
     randomString?: string
+    nymDomain?: string
+    lengthBBSMessages?: number
   },
 ): Promise<string> {
   // Procedure:
@@ -391,20 +394,24 @@ export async function derive(
   //    `bbsProof`, `labelMap`, `mandatoryIndexes`, `selectiveIndexes`, `featureOption`, and any required inputs
   //    indicated by the `featureOption`.
 
-  // const {
-  //   baseSignature,
-  //   publicKey,
-  //   signatures,
-  //   labelMap,
-  //   mandatoryIndexes,
-  // } = await createDisclosureData(document, proof, options.selectivePointers, options)
-  // return serializeDerivedProofValue({
-  //   baseSignature,
-  //   publicKey,
-  //   signatures,
-  //   labelMap,
-  //   mandatoryIndexes,
-  // })
+  const {
+    bbsProof,
+    labelMap,
+    mandatoryIndexes,
+    selectiveIndexes,
+    pseudonym,
+  } = await createDisclosureData(document, proof, options.selectivePointers, options)
+  return serializeDerivedProofValue({
+    bbsProof,
+    labelMap,
+    mandatoryIndexes,
+    selectiveIndexes,
+    presentationHeader: options.presentationHeader ? format.hexToBytes(options.presentationHeader) : new Uint8Array(),
+    feature: options.feature,
+    pseudonym,
+    nymDomain: options.nymDomain ? format.hexToBytes(options.nymDomain) : undefined,
+    lengthBBSMessages: options.lengthBBSMessages,
+  })
 }
 
 /**
