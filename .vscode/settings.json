@@ -1,19 +1,29 @@
 {
   "cSpell.words": [
+    "bnode",
+    "CBOR",
+    "CFRG",
     "ciphersuite",
     "Cryptosuite",
+    "deskolemized",
     "DIDURL",
     "herculas",
+    "HODR",
     "JWKEC",
     "Keypair",
     "mathrm",
     "MULTIBASE",
     "multicodec",
     "Multikey",
+    "NYMS",
     "ostr",
+    "PSDO",
+    "rdfc",
     "scure",
     "SSWU",
     "Unlinkable",
+    "URDNA",
+    "urlnopad",
     "varint"
   ]
 }

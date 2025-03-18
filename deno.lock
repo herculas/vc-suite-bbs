@@ -2,10 +2,11 @@
   "version": "4",
   "specifiers": {
     "jsr:@herculas/bbs-signature@~0.6.3": "0.6.3",
-    "jsr:@herculas/vc-data-integrity@~0.10.5": "0.10.5",
+    "jsr:@herculas/vc-data-integrity@~0.10.8": "0.10.8",
     "jsr:@scure/base@^1.2.4": "1.2.4",
     "jsr:@std/assert@1": "1.0.10",
     "jsr:@std/internal@^1.0.5": "1.0.5",
+    "npm:cbor2@^1.12.0": "1.12.0",
     "npm:jsonld@^8.3.3": "8.3.3",
     "npm:rdf-canonize@^4.0.1": "4.0.1"
   },
@@ -13,8 +14,8 @@
     "@herculas/bbs-signature@0.6.3": {
       "integrity": "0b194a001df494c6453eeb98d481073132fc93aeba94f559d1ecfc544b8d1898"
     },
-    "@herculas/vc-data-integrity@0.10.5": {
-      "integrity": "c74a1671cb2807b56c7d8ff00e19498bbc68669883433d6913288b61a76588bd",
+    "@herculas/vc-data-integrity@0.10.8": {
+      "integrity": "01962a0eb0431506b617ffe4e790028e2dc170d37e62899e90dedb855c6d4275",
       "dependencies": [
         "jsr:@scure/base",
         "jsr:@std/assert",
@@ -55,6 +56,9 @@
     },
     "canonicalize@1.0.8": {
       "integrity": "sha512-0CNTVCLZggSh7bc5VkX5WWPWO+cyZbNd07IHIsSXLia/eAq+r836hgk+8BKoEh7949Mda87VUOitx5OddVj64A=="
+    },
+    "cbor2@1.12.0": {
+      "integrity": "sha512-3Cco8XQhi27DogSp9Ri6LYNZLi/TBY/JVnDe+mj06NkBjW/ZYOtekaEU4wZ4xcRMNrFkDv8KNtOAqHyDfz3lYg=="
     },
     "data-uri-to-buffer@4.0.1": {
       "integrity": "sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A=="
@@ -143,8 +147,9 @@
   "workspace": {
     "dependencies": [
       "jsr:@herculas/bbs-signature@~0.6.3",
-      "jsr:@herculas/vc-data-integrity@~0.10.5",
-      "jsr:@std/assert@1"
+      "jsr:@herculas/vc-data-integrity@~0.10.8",
+      "jsr:@std/assert@1",
+      "npm:cbor2@^1.12.0"
     ]
   }
 }
