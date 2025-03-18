@@ -1,8 +1,9 @@
-import { Cipher } from "@herculas/bbs-signature"
+import { basic, blind, Cipher } from "@herculas/bbs-signature"
 import {
   type Canonize,
   type Compact,
   type Expand,
+  format,
   type HMAC,
   type JsonLdObject,
   type Proof,
@@ -14,7 +15,7 @@ import {
 import { parseBaseProofValue } from "./serialize.ts"
 
 import type { DisclosureData } from "./types.ts"
-import type { Feature } from "../constant/feature.ts"
+import { Feature } from "../constant/feature.ts"
 
 /**
  * Create data to be used to generate a derived proof.
@@ -35,7 +36,7 @@ export async function createDisclosureData(
   selectivePointers: Array<string>,
   options?:
     & {
-      feature: Feature
+      feature?: Feature
       cipher?: Cipher
       presentationHeader?: Uint8Array
       urnScheme?: URNScheme
@@ -142,7 +143,10 @@ export async function createDisclosureData(
   //
   // 16. Return an object with properties matching `bbsProof`, `verifierLabelMap` for `labelMap`, `mandatoryIndexes`,
   //     `selectiveIndexes`, `revealDocument`, `pseudonym`, and, if computed, `lengthBBSMessages`.
+
   const cipher = options?.cipher ?? Cipher.XMD_SHA_256
+  const feature = options?.feature ?? Feature.BASELINE
+
   const { bbsSignature, bbsHeader, publicKey, hmacKey, mandatoryPointers } = parseBaseProofValue(proof.proofValue!)
   const hmacCryptoKey = await crypto.subtle.importKey(
     "raw",
@@ -175,8 +179,27 @@ export async function createDisclosureData(
 
   const mandatoryIndexes = Array.from(combinedMatch.keys()).filter((index) => mandatoryMatch.has(index))
   const selectiveIndexes = Array.from(mandatoryNonMatch.keys()).filter((index) => selectiveMatch.has(index))
+  const bbsMessages = [...mandatoryNonMatch.values()].map((nq) => format.bytesToHex(new TextEncoder().encode(nq)))
 
-  const bbsMessages = mandatoryNonMatch.values().map((nq) => new TextEncoder().encode(nq))
+  let bbsProof: string
+  if (feature === Feature.BASELINE) {
+    bbsProof = basic.prove(
+      format.bytesToHex(publicKey),
+      format.bytesToHex(bbsSignature),
+      format.bytesToHex(bbsHeader),
+      options?.presentationHeader ? format.bytesToHex(options.presentationHeader) : undefined,
+      bbsMessages,
+      selectiveIndexes,
+      cipher,
+    )
+  } else if (feature === Feature.ANONYMOUS_HOLDER_BINDING) {
+    bbsProof = blind.prove(
+      format.bytesToHex(publicKey),
+      format.bytesToHex(bbsSignature),
+      format.bytesToHex(bbsHeader),
+      options?.presentationHeader ? format.bytesToHex(options.presentationHeader) : undefined,
+      bbsMessages,
+  }
 }
 
 /**
@@ -195,7 +218,10 @@ export async function createDisclosureData(
 export async function createVerifyData(
   document: JsonLdObject,
   proof: Proof,
-  options?: { curve?: Curve } & ToRdf & Partial<Canonize>,
+  options?:
+    & {}
+    & ToRdf
+    & Partial<Canonize>,
 ): Promise<VerifyData> {
   // Procedure:
   //
