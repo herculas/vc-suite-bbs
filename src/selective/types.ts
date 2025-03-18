@@ -1,4 +1,4 @@
-import type { JsonValue, LabelMap } from "@herculas/vc-data-integrity"
+import type { JsonValue, LabelMap, NQuad } from "@herculas/vc-data-integrity"
 import type { Feature } from "../constant/feature.ts"
 
 export type CompressedLabelMap = Map<number, number>
@@ -53,7 +53,7 @@ export type VerifyData = {
   mandatoryHash: Uint8Array
   selectiveIndexes: Array<number>
   presentationHeader: Uint8Array
-  nonMandatory: Uint8Array
+  nonMandatory: Array<NQuad>
   feature: Feature
   pseudonym?: Uint8Array
   lengthBBSMessages?: number

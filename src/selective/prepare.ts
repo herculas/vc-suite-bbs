@@ -1,21 +1,26 @@
-import { basic, blind, Cipher } from "@herculas/bbs-signature"
+import { basic, Cipher } from "@herculas/bbs-signature"
 import {
   type Canonize,
   type Compact,
   type Expand,
   format,
+  type Hasher,
   type HMAC,
   type JsonLdObject,
+  type LabelMap,
+  ProcessingError,
+  ProcessingErrorCode,
   type Proof,
+  rdfc,
   selective,
   type ToRdf,
   type URNScheme,
 } from "@herculas/vc-data-integrity"
 
-import { parseBaseProofValue } from "./serialize.ts"
-
-import type { DisclosureData } from "./types.ts"
 import { Feature } from "../constant/feature.ts"
+import { parseBaseProofValue, parseDerivedProofValue } from "./serialize.ts"
+
+import type { DisclosureData, VerifyData } from "./types.ts"
 
 /**
  * Create data to be used to generate a derived proof.
@@ -192,13 +197,41 @@ export async function createDisclosureData(
       selectiveIndexes,
       cipher,
     )
-  } else if (feature === Feature.ANONYMOUS_HOLDER_BINDING) {
-    bbsProof = blind.prove(
-      format.bytesToHex(publicKey),
-      format.bytesToHex(bbsSignature),
-      format.bytesToHex(bbsHeader),
-      options?.presentationHeader ? format.bytesToHex(options.presentationHeader) : undefined,
-      bbsMessages,
+  } else {
+    throw new ProcessingError(
+      ProcessingErrorCode.PROOF_GENERATION_ERROR,
+      "selective/prepare#createDisclosureData",
+      `Unsupported feature option: ${feature}`,
+    )
+  }
+
+  const revealDocument = selective.selectJsonLd(combinedPointers, document)
+
+  let canonicalIdMap: LabelMap = new Map()
+  const nQuads = groups.get("combined")!.deskolemizedNQuads.join("")
+  await rdfc.canonize(nQuads, {
+    ...options,
+    algorithm: "RDFC-1.0",
+    inputFormat: "application/n-quads",
+    format: "application/n-quads",
+    canonicalIdMap,
+  })
+  canonicalIdMap = new Map(
+    Array.from(canonicalIdMap, ([key, value]) => [key.replace(/^_:/, ""), value.replace(/^_:/, "")]),
+  )
+
+  const verifierLabelMap: LabelMap = new Map()
+  for (const [inputLabel, verifierLabel] of canonicalIdMap) {
+    verifierLabelMap.set(verifierLabel, labelMap.get(inputLabel)!)
+  }
+
+  return {
+    bbsProof: format.hexToBytes(bbsProof),
+    labelMap: verifierLabelMap,
+    mandatoryIndexes,
+    selectiveIndexes,
+    presentationHeader: options?.presentationHeader ?? new Uint8Array(),
+    revealDocument,
   }
 }
 
@@ -219,7 +252,6 @@ export async function createVerifyData(
   document: JsonLdObject,
   proof: Proof,
   options?:
-    & {}
     & ToRdf
     & Partial<Canonize>,
 ): Promise<VerifyData> {
@@ -248,4 +280,67 @@ export async function createVerifyData(
   // 8. Initialize `mandatoryHash` to the result of calling the `hashMandatory` function, passing `mandatory`.
   // 9. Return an object with properties matching `baseSignature`, `proofHash`, `nonMandatory`, `mandatoryHash`,
   //    `selectiveIndexes`, `featureOption`, and, possibly, `pseudonym` and/or `lengthBBSMessages`.
+
+  const hasher: Hasher = async (data: Uint8Array) => new Uint8Array(await crypto.subtle.digest("SHA-256", data))
+  const proofHashPromise = _hashCanonizedProof(document, proof, hasher, options)
+
+  const {
+    bbsProof,
+    labelMap,
+    mandatoryIndexes,
+    selectiveIndexes,
+    presentationHeader,
+    feature,
+    pseudonym,
+    lengthBBSMessages,
+  } = parseDerivedProofValue(proof.proofValue!)
+  const labelMapFactoryFunction = selective.createLabelMapFunction(labelMap)
+  const nQuads = await selective.labelReplacementCanonicalizeJsonLd(document, labelMapFactoryFunction, options)
+
+  const mandatory: Array<string> = []
+  const nonMandatory: Array<string> = []
+
+  nQuads.canonicalNQuads.forEach((nq, index) => {
+    if (mandatoryIndexes.includes(index)) {
+      mandatory.push(nq)
+    } else {
+      nonMandatory.push(nq)
+    }
+  })
+
+  const mandatoryHash = await selective.hashMandatoryNQuads(mandatory, hasher)
+  return {
+    bbsProof,
+    proofHash: await proofHashPromise,
+    mandatoryHash,
+    selectiveIndexes,
+    presentationHeader,
+    nonMandatory,
+    feature,
+    pseudonym,
+    lengthBBSMessages,
+  }
+}
+
+async function _hashCanonizedProof(
+  document: JsonLdObject,
+  proof: Proof,
+  hasher: Hasher,
+  options?: ToRdf & Partial<Canonize>,
+) {
+  options = {
+    algorithm: "RDFC-1.0",
+    safe: true,
+    rdfDirection: "i18n-datatype",
+    ...options,
+    produceGeneralizedRdf: false,
+  }
+  proof = {
+    "@context": document["@context"],
+    ...proof,
+  }
+  delete proof.proofValue
+  const rdf = await rdfc.toRdf(proof, options)
+  const canonized = await rdfc.canonize(rdf, options as Canonize)
+  return await hasher(new TextEncoder().encode(canonized))
 }
